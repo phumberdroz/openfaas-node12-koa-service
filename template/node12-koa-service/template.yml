@@ -1,2 +1,2 @@
-language: openfaas-node12-koa-service
+language: node12-koa-service
 fprocess: node index.js
