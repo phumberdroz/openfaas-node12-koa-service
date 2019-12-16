@@ -4,31 +4,25 @@ FROM node:12.13.0-slim as ship
 
 COPY --from=watchdog /fwatchdog /usr/bin/fwatchdog
 RUN chmod +x /usr/bin/fwatchdog
+ENV SOURCES /app
 
-RUN addgroup -S app && adduser -S -g app app
-
-RUN apk --no-cache add ca-certificates
-
+RUN apt-get -y update && \
+ apt-get -y install ca-certificates && \
+ apt-get clean && \
+ rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/man/?? /usr/share/man/??_*
 WORKDIR /root/
 
 # Turn down the verbosity to default level.
 ENV NPM_CONFIG_LOGLEVEL warn
 
-RUN mkdir -p /home/app
-
-# Wrapper/boot-strapper
-WORKDIR /home/app
-COPY package.json ./
-
-# This ordering means the npm installation is cached for the outer function handler.
-RUN npm i
+WORKDIR ${SOURCES}
 
 # Copy outer function handler
 COPY index.js ./
 
 # COPY function node packages and install, adding this as a separate
 # entry allows caching of npm install
-WORKDIR /home/app/function
+WORKDIR ${SOURCES}/function
 COPY function/*.json ./
 RUN npm i || :
 
@@ -36,13 +30,12 @@ RUN npm i || :
 COPY function/ ./
 
 # Set correct permissions to use non root user
-WORKDIR /home/app/
+WORKDIR ${SOURCES}
 
 # chmod for tmp is for a buildkit issue (@alexellis)
-RUN chown app:app -R /home/app \
-    && chmod 777 /tmp
+RUN chmod 777 /tmp
 
-USER app
+USER node
 
 ENV cgi_headers="true"
 ENV fprocess="node index.js"
