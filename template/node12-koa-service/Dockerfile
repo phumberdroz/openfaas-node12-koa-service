@@ -22,11 +22,10 @@ COPY index.js ./
 
 # COPY function node packages and install, adding this as a separate
 # entry allows caching of npm install
-WORKDIR ${SOURCES}/function
 COPY function/*.json ./
 RUN npm i || :
-
 # COPY function files and folders
+WORKDIR ${SOURCES}/function
 COPY function/ ./
 
 # Set correct permissions to use non root user
